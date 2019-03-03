@@ -1,3 +1,10 @@
+<#
+.SYNOPSIS
+    Iterates through failed jobs on a local DPM server and run a consistency check one at a time
+.DESCRIPTION
+    Sleeps a minute in between checking jobs in progress
+#>
+
 $DPMServername = $env:COMPUTERNAME
 
 $ReplicaErrors = Get-DPMAlert -DPMServerName $DPMServername | Where-Object {$_.Severity -eq "Error" }
@@ -6,7 +13,7 @@ write-host "Found" $ReplicaErrors.length "errors"
 
 foreach ($ReplicaError in $ReplicaErrors) {
 
-    Write-Host $ReplicaError.TargetObjectName
+    Write-Host "Next up:" $ReplicaError.TargetObjectName
 
     # Loop until any current jobs finish
     Do {
