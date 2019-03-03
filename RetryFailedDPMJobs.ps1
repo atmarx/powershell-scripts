@@ -3,6 +3,8 @@
     Iterates through failed jobs on a local DPM server and run a consistency check one at a time
 .DESCRIPTION
     Sleeps a minute in between checking jobs in progress
+.NOTES
+    Thanks to https://charbelnemnom.com/2017/09/powershell-script-for-consistency-check-when-replica-is-inconsistent-dpm-scdpm-powershell/
 #>
 
 $DPMServername = $env:COMPUTERNAME
