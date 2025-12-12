@@ -1,0 +1,2 @@
+Write-Debug "Hi"
+write-
