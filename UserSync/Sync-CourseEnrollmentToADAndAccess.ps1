@@ -322,6 +322,23 @@ foreach ($group in $parsedGroups) {
             Write-Warning "Failed to remove user '$user' from group '$groupName': $_"
         }
     }
+
+    # Update group description with sync information
+    $syncDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $finalMemberCount = $desiredMembers.Count
+    $addedCount = $toAdd.Count
+    $removedCount = $toRemove.Count
+    $newDescription = "Last synced on $syncDate with $finalMemberCount members ($addedCount added, $removedCount removed)"
+
+    Write-Debug "About to update description for group '$groupName': $newDescription"
+    try {
+        if ($PSCmdlet.ShouldProcess("Group: $groupName", "Update description: $newDescription")) {
+            Set-ADGroup -Identity $groupDN -Description $newDescription -ErrorAction Stop
+            Write-Debug "Successfully updated description for group '$groupName'"
+        }
+    } catch {
+        Write-Warning "Failed to update description for group '$groupName': $_"
+    }
 }
 
 Write-Verbose "AD group membership synchronization complete"

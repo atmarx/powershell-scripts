@@ -135,9 +135,15 @@ FOR EACH parsed AD group:
     FOR EACH user in usersToRemove:
         REMOVE user from AD group
         LOG the operation
+
+    UPDATE group's Description field with sync audit information:
+        Format: "Last synced on {date} with {count} members ({added} added, {removed} removed)"
+        Example: "Last synced on 2025-12-12 15:30:45 with 237 members (5 added, 12 removed)"
 ```
 
-**Note:** Large-scale removals are expected and allowed (e.g., at end of term when courses end).
+**Notes:**
+- Large-scale removals are expected and allowed (e.g., at end of term when courses end)
+- Group descriptions provide quick audit trail for Accounts team to verify sync status
 
 ### Step 5: Export Physical Access File
 ```
