@@ -165,6 +165,94 @@ Distributed IT groups across our dozen colleges independently manage Active Dire
 
 ---
 
+## 6. Privacy & Compliance Considerations
+
+### FERPA Analysis
+
+**Current State**: Course enrollment security groups already exist in a piecemeal fashion across distributed IT groups with varied visibility and access controls.
+
+**Privacy Consideration**: Group membership reveals course enrollment information. Any user with an Active Directory account can potentially query group membership, inferring which students are enrolled in which courses.
+
+**Key Questions**:
+- Does the institution classify course enrollment as directory information or protected information under FERPA?
+- What are existing policies regarding student group memberships in AD/Entra ID?
+- **Privacy Officer review required before production deployment**
+
+### Risk Assessment
+
+**Active Directory (On-Premises)**:
+- Limited to users with valid AD accounts (faculty, staff, students)
+- Requires deliberate effort to query group membership
+- Low discoverability - most users wouldn't think to look
+- **Risk Level: Low to Moderate**
+
+**Entra ID/Office 365 (If Synced)**:
+- Groups highly discoverable in Teams, Outlook, SharePoint group pickers
+- May appear in autocomplete, suggested groups, search results
+- Users frequently stumble upon groups inadvertently
+- **Risk Level: Moderate to High**
+
+### Recommended Mitigation Strategies
+
+#### Primary Mitigations (Strongly Recommended)
+
+1. **Exclude Course Groups OU from Entra ID Sync** ⭐
+   - Prevents groups from appearing in Office 365 environment
+   - Eliminates most accidental discovery scenarios
+   - Groups remain functional for on-premises access control
+   - **Systems team deliverable during infrastructure setup**
+   - **Minimal operational impact** - these groups serve technical access control, not student collaboration
+
+2. **Restrict Active Directory Permissions on Course Groups OU**
+   - Remove default "Authenticated Users" read permissions
+   - Grant read access only to:
+     - Service accounts requiring group membership queries
+     - IT administrators for support purposes
+     - Systems performing authentication/authorization
+   - **Most protective approach** - closes privacy gap entirely
+   - **Systems team coordination required** - must verify no legitimate services break
+
+#### Secondary Mitigations (Defense in Depth)
+
+3. **Group Naming Abstraction** (Optional - Breaking Change)
+   - Use coded identifiers instead of human-readable names
+   - Example: "COURSE-GRP-12345" instead of "Student Enrolled in PSYCH 101"
+   - Requires mapping table to maintain
+   - **Trade-off**: Reduces transparency for IT staff troubleshooting
+   - **Not recommended initially** - adds complexity with marginal privacy benefit if primary mitigations are implemented
+
+4. **Audit Logging**
+   - Enable AD audit logging for group membership queries on course groups OU
+   - Provides detection capability for inappropriate access attempts
+   - **Compliance value**: Demonstrates due diligence
+
+5. **Policy & Training**
+   - Document acceptable use policies for group membership information
+   - Include in IT staff onboarding/training
+   - Clear expectations that enrollment data is not to be extracted or shared
+
+### Comparison to Current State
+
+**Important Context**: This centralized solution does not introduce new privacy risks - it consolidates existing practices:
+- Course enrollment groups already exist across colleges with inconsistent protections
+- Current distributed approach may have LESS consistent privacy controls
+- Centralization enables uniform application of privacy safeguards
+- **Net Effect**: Opportunity to IMPROVE privacy posture through standardized controls
+
+### Compliance Action Items
+
+**Before Production Deployment**:
+1. ☐ Consult with Privacy Officer to confirm institutional stance on course enrollment as directory vs. protected information
+2. ☐ Obtain written approval from appropriate authority (Privacy Officer, General Counsel, or Registrar)
+3. ☐ Implement Entra ID sync exclusion for course groups OU
+4. ☐ Work with Systems team to evaluate AD permission restrictions
+5. ☐ Document privacy controls in operational procedures
+6. ☐ Establish audit logging for group membership queries
+
+**Recommended Stance**: Given that similar groups already exist in production, request Privacy Officer confirmation that standardizing these groups under documented controls is acceptable, with specific approval for the mitigation strategies implemented.
+
+---
+
 ## Recommendation
 
 **Proceed with implementation.** The technical solution is complete and proven. The primary remaining work involves operational setup (Systems team infrastructure) and coordination (Data team exports, Accounts team processes). The benefits significantly outweigh the implementation effort, and the phased rollout approach mitigates risk.
