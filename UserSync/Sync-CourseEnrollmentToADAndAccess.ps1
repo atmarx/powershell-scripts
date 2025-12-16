@@ -25,14 +25,24 @@
 .PARAMETER TargetOU
     Distinguished Name of the OU containing the course security groups.
 
+.PARAMETER ErrorLogPath
+    Path where the error log file will be written. Only created if errors/warnings occur.
+    Default: C:\CourseSync\Logs\sync-errors.log
+
 .PARAMETER WhatIf
     If specified, shows what changes would be made without actually making them.
 
 .EXAMPLE
     .\Sync-CourseEnrollmentToADAndAccess.ps1 -InputCSVPath "C:\Data\input.csv" -WhatIf
 
+.EXAMPLE
+    .\Sync-CourseEnrollmentToADAndAccess.ps1 -Verbose -ErrorLogPath "C:\Logs\sync-errors.log"
+
 .NOTES
     Requires Active Directory PowerShell module and appropriate permissions to modify groups.
+
+    Error Logging: All errors and warnings are collected and written to the error log file.
+    The log includes timestamps, categories, and execution duration for troubleshooting.
 #>
 
 [CmdletBinding(SupportsShouldProcess=$true)]
@@ -47,14 +57,40 @@ param(
     [string]$OutputCSVPath = "C:\CourseSync\output.csv",
 
     [Parameter(Mandatory=$false)]
-    [string]$TargetOU = "OU=CourseGroups,OU=Students,DC=domain,DC=com"
+    [string]$TargetOU = "OU=CourseGroups,OU=Students,DC=domain,DC=com",
+
+    [Parameter(Mandatory=$false)]
+    [string]$ErrorLogPath = "C:\CourseSync\Logs\sync-errors.log"
 )
 
 # Requires Active Directory module
 Import-Module ActiveDirectory -ErrorAction Stop
 
+# Initialize error logging
+$script:ErrorLog = @()
+$script:StartTime = Get-Date
+
+function Write-ErrorLog {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Message,
+
+        [Parameter(Mandatory=$false)]
+        [string]$Category = "General"
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "[$timestamp] [$Category] $Message"
+
+    # Add to in-memory collection
+    $script:ErrorLog += $logEntry
+
+    # Also write to Warning stream for real-time visibility
+    Write-Warning $Message
+}
+
 Write-Verbose "Starting course enrollment synchronization process"
-Write-Debug "Parameters: InputCSV=$InputCSVPath, AccessMapping=$AccessMappingPath, OutputCSV=$OutputCSVPath, TargetOU=$TargetOU"
+Write-Debug "Parameters: InputCSV=$InputCSVPath, AccessMapping=$AccessMappingPath, OutputCSV=$OutputCSVPath, TargetOU=$TargetOU, ErrorLog=$ErrorLogPath"
 
 #region CSV Import and Validation
 
@@ -63,7 +99,9 @@ try {
     $enrollmentData = Import-Csv -Path $InputCSVPath -ErrorAction Stop
     Write-Verbose "Successfully imported $($enrollmentData.Count) enrollment records"
 } catch {
-    Write-Error "Failed to import enrollment data from $InputCSVPath : $_"
+    $errorMsg = "Failed to import enrollment data from $InputCSVPath : $_"
+    Write-ErrorLog -Message $errorMsg -Category "CSV Import"
+    Write-Error $errorMsg
     exit 1
 }
 
@@ -72,7 +110,9 @@ try {
     $accessMappings = Import-Csv -Path $AccessMappingPath -ErrorAction Stop
     Write-Verbose "Successfully imported $($accessMappings.Count) access mapping records"
 } catch {
-    Write-Error "Failed to import access mapping data from $AccessMappingPath : $_"
+    $errorMsg = "Failed to import access mapping data from $AccessMappingPath : $_"
+    Write-ErrorLog -Message $errorMsg -Category "CSV Import"
+    Write-Error $errorMsg
     exit 1
 }
 
@@ -88,7 +128,9 @@ try {
     Write-Debug "Successfully retrieved $($adGroups.Count) groups from AD"
     Write-Verbose "Found $($adGroups.Count) existing groups in target OU"
 } catch {
-    Write-Error "Failed to retrieve AD groups from $TargetOU : $_"
+    $errorMsg = "Failed to retrieve AD groups from $TargetOU : $_"
+    Write-ErrorLog -Message $errorMsg -Category "AD Query"
+    Write-Error $errorMsg
     exit 1
 }
 
@@ -141,7 +183,8 @@ foreach ($group in $adGroups) {
         Write-Debug "Parsed group '$groupName' as Subject level: $($matches[1])"
     }
     else {
-        Write-Warning "Group '$groupName' does not match expected naming pattern and will be skipped"
+        $warnMsg = "Group '$groupName' does not match expected naming pattern and will be skipped"
+        Write-ErrorLog -Message $warnMsg -Category "Group Parsing"
     }
 }
 
@@ -278,7 +321,8 @@ foreach ($group in $parsedGroups) {
             Select-Object -ExpandProperty SamAccountName
         Write-Debug "Retrieved $($currentMembers.Count) current members from group: $groupName"
     } catch {
-        Write-Warning "Failed to retrieve members of group '$groupName': $_"
+        $errorMsg = "Failed to retrieve members of group '$groupName': $_"
+        Write-ErrorLog -Message $errorMsg -Category "AD Query"
         continue
     }
 
@@ -295,31 +339,33 @@ foreach ($group in $parsedGroups) {
 
     Write-Verbose "Group '$groupName': $($toAdd.Count) to add, $($toRemove.Count) to remove"
 
-    # Add members
-    foreach ($user in $toAdd) {
-        Write-Debug "About to add user '$user' to group '$groupName'"
+    # Batch add members
+    if ($toAdd.Count -gt 0) {
+        Write-Debug "About to add $($toAdd.Count) users to group '$groupName': $($toAdd -join ', ')"
         try {
-            if ($PSCmdlet.ShouldProcess("Group: $groupName", "Add member: $user")) {
-                Add-ADGroupMember -Identity $groupDN -Members $user -ErrorAction Stop
-                Write-Debug "Successfully added user '$user' to group '$groupName'"
-                Write-Verbose "Added $user to $groupName"
+            if ($PSCmdlet.ShouldProcess("Group: $groupName", "Add $($toAdd.Count) members")) {
+                Add-ADGroupMember -Identity $groupDN -Members $toAdd -ErrorAction Stop
+                Write-Debug "Successfully added $($toAdd.Count) users to group '$groupName'"
+                Write-Verbose "Added $($toAdd.Count) members to $groupName"
             }
         } catch {
-            Write-Warning "Failed to add user '$user' to group '$groupName': $_"
+            $errorMsg = "Failed to add members to group '$groupName': $_ | Attempted users: $($toAdd -join ', ')"
+            Write-ErrorLog -Message $errorMsg -Category "AD Group Update"
         }
     }
 
-    # Remove members
-    foreach ($user in $toRemove) {
-        Write-Debug "About to remove user '$user' from group '$groupName'"
+    # Batch remove members
+    if ($toRemove.Count -gt 0) {
+        Write-Debug "About to remove $($toRemove.Count) users from group '$groupName': $($toRemove -join ', ')"
         try {
-            if ($PSCmdlet.ShouldProcess("Group: $groupName", "Remove member: $user")) {
-                Remove-ADGroupMember -Identity $groupDN -Members $user -Confirm:$false -ErrorAction Stop
-                Write-Debug "Successfully removed user '$user' from group '$groupName'"
-                Write-Verbose "Removed $user from $groupName"
+            if ($PSCmdlet.ShouldProcess("Group: $groupName", "Remove $($toRemove.Count) members")) {
+                Remove-ADGroupMember -Identity $groupDN -Members $toRemove -Confirm:$false -ErrorAction Stop
+                Write-Debug "Successfully removed $($toRemove.Count) users from group '$groupName'"
+                Write-Verbose "Removed $($toRemove.Count) members from $groupName"
             }
         } catch {
-            Write-Warning "Failed to remove user '$user' from group '$groupName': $_"
+            $errorMsg = "Failed to remove members from group '$groupName': $_ | Attempted users: $($toRemove -join ', ')"
+            Write-ErrorLog -Message $errorMsg -Category "AD Group Update"
         }
     }
 
@@ -337,7 +383,8 @@ foreach ($group in $parsedGroups) {
             Write-Debug "Successfully updated description for group '$groupName'"
         }
     } catch {
-        Write-Warning "Failed to update description for group '$groupName': $_"
+        $errorMsg = "Failed to update description for group '$groupName': $_"
+        Write-ErrorLog -Message $errorMsg -Category "AD Group Update"
     }
 }
 
@@ -354,7 +401,50 @@ try {
     Write-Debug "Successfully exported $($accessAssignments.Count) access records to $OutputCSVPath"
     Write-Verbose "Successfully exported $($accessAssignments.Count) access clearance assignments"
 } catch {
-    Write-Error "Failed to export access control file to $OutputCSVPath : $_"
+    $errorMsg = "Failed to export access control file to $OutputCSVPath : $_"
+    Write-ErrorLog -Message $errorMsg -Category "CSV Export"
+    Write-Error $errorMsg
+}
+
+#endregion
+
+#region Write Error Log to File
+
+if ($script:ErrorLog.Count -gt 0) {
+    Write-Verbose "Writing $($script:ErrorLog.Count) errors/warnings to log file: $ErrorLogPath"
+
+    try {
+        # Ensure directory exists
+        $logDir = Split-Path -Path $ErrorLogPath -Parent
+        if (-not (Test-Path -Path $logDir)) {
+            New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+        }
+
+        # Write header with run information
+        $endTime = Get-Date
+        $duration = $endTime - $script:StartTime
+        $header = @"
+========================================
+Course Enrollment Sync - Error Log
+========================================
+Script Start: $($script:StartTime.ToString('yyyy-MM-dd HH:mm:ss'))
+Script End: $($endTime.ToString('yyyy-MM-dd HH:mm:ss'))
+Duration: $($duration.ToString('hh\:mm\:ss'))
+Total Errors/Warnings: $($script:ErrorLog.Count)
+========================================
+
+"@
+
+        # Write to log file
+        $header | Out-File -FilePath $ErrorLogPath -Encoding UTF8
+        $script:ErrorLog | Out-File -FilePath $ErrorLogPath -Append -Encoding UTF8
+
+        Write-Verbose "Error log written successfully to: $ErrorLogPath"
+    } catch {
+        Write-Warning "Failed to write error log to $ErrorLogPath : $_"
+    }
+} else {
+    Write-Verbose "No errors or warnings encountered during execution"
 }
 
 #endregion
