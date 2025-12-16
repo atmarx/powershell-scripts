@@ -128,13 +128,15 @@ FOR EACH parsed AD group:
         usersToAdd = desired members NOT in current members
         usersToRemove = current members NOT in desired members
 
-    FOR EACH user in usersToAdd:
-        ADD user to AD group
-        LOG the operation
+    IF usersToAdd is not empty:
+        BATCH ADD all users to AD group in single operation
+        LOG operation (count and list of users)
+        IF operation fails: LOG error with full user list
 
-    FOR EACH user in usersToRemove:
-        REMOVE user from AD group
-        LOG the operation
+    IF usersToRemove is not empty:
+        BATCH REMOVE all users from AD group in single operation
+        LOG operation (count and list of users)
+        IF operation fails: LOG error with full user list
 
     UPDATE group's Description field with sync audit information:
         Format: "Last synced on {date} with {count} members ({added} added, {removed} removed)"
@@ -144,18 +146,57 @@ FOR EACH parsed AD group:
 **Notes:**
 - Large-scale removals are expected and allowed (e.g., at end of term when courses end)
 - Group descriptions provide quick audit trail for Accounts team to verify sync status
+- **Performance:** Members are added/removed in batched operations for optimal performance with large groups
 
 ### Step 5: Export Physical Access File
 ```
 WRITE all unique (studentID, clearance) pairs to output.csv
 ```
 
+### Step 6: Generate Error Log (if needed)
+```
+IF any errors or warnings occurred during execution:
+    CREATE error log file with:
+        - Execution timestamp and duration
+        - Categorized error/warning messages
+        - Full context for troubleshooting
+    WRITE log to ErrorLogPath
+ELSE:
+    No log file created (successful run)
+```
+
 ## Error Handling
 
-- **Missing CSV files:** Script exits with error
-- **Active Directory connection issues:** Script exits with error
-- **Individual AD operations fail:** Script logs warning and continues with other groups
+- **Missing CSV files:** Script exits with error, logged to error log
+- **Active Directory connection issues:** Script exits with error, logged to error log
+- **Individual AD operations fail:** Script logs error with details and continues with other groups
 - **Group name doesn't match pattern:** Script logs warning and skips that group
+
+### Error Log Format
+
+All errors and warnings are collected during execution and written to a timestamped log file:
+
+```
+========================================
+Course Enrollment Sync - Error Log
+========================================
+Script Start: 2025-12-16 02:00:15
+Script End: 2025-12-16 02:03:42
+Duration: 00:03:27
+Total Errors/Warnings: 3
+========================================
+
+[2025-12-16 02:01:23] [AD Group Update] Failed to add members to group 'Student Enrolled in MATH 101': Access denied | Attempted users: jsmith, bjones
+[2025-12-16 02:02:15] [Group Parsing] Group 'Random Group Name' does not match expected naming pattern
+[2025-12-16 02:03:10] [AD Query] Failed to retrieve members of group 'Student Enrolled in CHEM 200': Object not found
+```
+
+**Error Categories:**
+- `CSV Import` - Failed to read input files
+- `AD Query` - Failed to retrieve AD data
+- `Group Parsing` - Groups that don't match naming conventions
+- `AD Group Update` - Failed add/remove/description operations
+- `CSV Export` - Failed to write output files
 
 ## Logging Levels
 
@@ -179,16 +220,23 @@ All paths and settings are script parameters with defaults:
 
 - `InputCSVPath` - Path to enrollment data (default: C:\CourseSync\input.csv)
 - `AccessMappingPath` - Path to access mapping file (default: C:\CourseSync\AccessMapping.csv)
-- `OutputCSVPath` - Path for output file (default: C:\CourseSync\output.csv)
+- `OutputCSVPath` - Path for physical access output file (default: C:\CourseSync\output.csv)
+- `ErrorLogPath` - Path for error log file (default: C:\CourseSync\Logs\sync-errors.log)
 - `TargetOU` - Active Directory OU containing course groups (default: OU=CourseGroups,OU=Students,DC=domain,DC=com)
 
 ## Performance Considerations
 
 With ~100,000 enrollment records:
-- Single-pass design minimizes iterations
-- Hashtables provide fast lookups
-- Bulk operations where possible
+- Single-pass design minimizes iterations through enrollment data
+- Hashtables provide fast lookups for group matching
+- **Batched AD operations** - Members added/removed in single calls per group (not per-user)
+- Optimized for scheduled/automated execution
 - Expected runtime: [To be determined during testing]
+
+**Performance Benefits of Batching:**
+- Reduces AD API calls from potentially thousands to dozens
+- Significantly faster execution with large member changes
+- Reduced network overhead and AD server load
 
 ## Questions for Data Team
 
