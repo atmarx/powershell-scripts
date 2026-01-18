@@ -7,6 +7,7 @@ A collection of PowerShell scripts for common IT automation tasks. If you have a
 | Script | Description |
 |--------|-------------|
 | [EnrollmentSync](EnrollmentSync/) | Syncs enrollment data to Active Directory groups and generates physical access control files. Supports hierarchical group matching, configurable naming patterns, and WhatIf mode with JSON export. |
+| [FOCUSExport-AzureLocal](FOCUSExport-AzureLocal/) | Exports FOCUS-format billing data from Azure Local (Azure Stack HCI) VMs. Supports tier-based pricing, proration, subsidies, and configurable audit output (Text/Json/Splunk). |
 
 ## License
 
