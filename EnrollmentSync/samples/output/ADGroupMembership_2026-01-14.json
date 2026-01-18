@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "generatedAt": "2026-01-14T02:00:00",
+    "sourceFile": "CourseEnrollmentData_2026-01-14.csv",
+    "targetOU": "OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+    "mode": "WhatIf",
+    "totalGroups": 8,
+    "groupsWithChanges": 6
+  },
+  "groups": [
+    {
+      "name": "Student Enrolled in MATH",
+      "distinguishedName": "CN=Student Enrolled in MATH,OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+      "level": "Subject",
+      "subject": "MATH",
+      "course": null,
+      "section": null,
+      "currentMembers": ["jsmith", "oldstudent"],
+      "proposedMembers": ["jsmith", "mjohnson", "bjones", "agarcia"],
+      "toAdd": ["mjohnson", "bjones", "agarcia"],
+      "toRemove": ["oldstudent"],
+      "summary": {
+        "currentCount": 2,
+        "proposedCount": 4,
+        "addCount": 3,
+        "removeCount": 1
+      }
+    },
+    {
+      "name": "Student Enrolled in MATH 101",
+      "distinguishedName": "CN=Student Enrolled in MATH 101,OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+      "level": "Course",
+      "subject": "MATH",
+      "course": "101",
+      "section": null,
+      "currentMembers": [],
+      "proposedMembers": ["jsmith", "mjohnson", "bjones", "agarcia"],
+      "toAdd": ["jsmith", "mjohnson", "bjones", "agarcia"],
+      "toRemove": [],
+      "summary": {
+        "currentCount": 0,
+        "proposedCount": 4,
+        "addCount": 4,
+        "removeCount": 0
+      }
+    },
+    {
+      "name": "Student Enrolled in MATH 101 Section 001",
+      "distinguishedName": "CN=Student Enrolled in MATH 101 Section 001,OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+      "level": "Section",
+      "subject": "MATH",
+      "course": "101",
+      "section": "001",
+      "currentMembers": [],
+      "proposedMembers": ["jsmith", "mjohnson"],
+      "toAdd": ["jsmith", "mjohnson"],
+      "toRemove": [],
+      "summary": {
+        "currentCount": 0,
+        "proposedCount": 2,
+        "addCount": 2,
+        "removeCount": 0
+      }
+    },
+    {
+      "name": "Student Enrolled in CHEM",
+      "distinguishedName": "CN=Student Enrolled in CHEM,OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+      "level": "Subject",
+      "subject": "CHEM",
+      "course": null,
+      "section": null,
+      "currentMembers": ["bjones"],
+      "proposedMembers": ["bjones", "kwilliams", "agarcia"],
+      "toAdd": ["kwilliams", "agarcia"],
+      "toRemove": [],
+      "summary": {
+        "currentCount": 1,
+        "proposedCount": 3,
+        "addCount": 2,
+        "removeCount": 0
+      }
+    },
+    {
+      "name": "Student Enrolled in CHEM 110",
+      "distinguishedName": "CN=Student Enrolled in CHEM 110,OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+      "level": "Course",
+      "subject": "CHEM",
+      "course": "110",
+      "section": null,
+      "currentMembers": [],
+      "proposedMembers": ["bjones", "kwilliams"],
+      "toAdd": ["bjones", "kwilliams"],
+      "toRemove": [],
+      "summary": {
+        "currentCount": 0,
+        "proposedCount": 2,
+        "addCount": 2,
+        "removeCount": 0
+      }
+    },
+    {
+      "name": "Student Enrolled in ART",
+      "distinguishedName": "CN=Student Enrolled in ART,OU=EnrollmentGroups,OU=Groups,DC=example,DC=edu",
+      "level": "Subject",
+      "subject": "ART",
+      "course": null,
+      "section": null,
+      "currentMembers": ["graduated2025"],
+      "proposedMembers": ["mjohnson", "lmartinez"],
+      "toAdd": ["mjohnson", "lmartinez"],
+      "toRemove": ["graduated2025"],
+      "summary": {
+        "currentCount": 1,
+        "proposedCount": 2,
+        "addCount": 2,
+        "removeCount": 1
+      }
+    }
+  ],
+  "totals": {
+    "totalMembersToAdd": 15,
+    "totalMembersToRemove": 2,
+    "unchangedGroups": 2
+  }
+}
