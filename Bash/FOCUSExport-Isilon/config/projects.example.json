@@ -1,0 +1,19 @@
+{
+  "projects": {
+    "/ifs/research/smith-lab": {
+      "piEmail": "smith@example.edu",
+      "projectId": "smith-lab",
+      "fundOrg": "NIH-2024-001"
+    },
+    "/ifs/research/jones-genomics": {
+      "piEmail": "jones@example.edu",
+      "projectId": "jones-genomics",
+      "fundOrg": "NSF-BIO-2024"
+    },
+    "/ifs/research/climate-modeling": {
+      "piEmail": "martinez.sofia@example.edu",
+      "projectId": "climate-modeling",
+      "fundOrg": "NSF-ATM-2024"
+    }
+  }
+}

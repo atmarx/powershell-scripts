@@ -11,7 +11,10 @@ A collection of scripts for common IT automation tasks in academic environments.
 
 ## Bash
 
-*Coming soon*
+| Script | Description |
+|--------|-------------|
+| [FOCUSExport-Slurm](Bash/FOCUSExport-Slurm/) | Exports FOCUS-format billing data from Slurm HPC accounting. Supports SU-based pricing with partition multipliers, free-tier subsidies, and WhatIf mode. |
+| [FOCUSExport-Isilon](Bash/FOCUSExport-Isilon/) | Exports FOCUS-format billing data from Isilon storage quotas. Supports per-TB pricing with configurable free tier (e.g., first 500GB free). |
 
 ## License
 
